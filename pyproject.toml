@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "9c-signer"
+version = "0.1.0"
+description = ""
+authors = ["Yang Chun Ung <qooraven@gmail.com>"]
+readme = "README.md"
+packages = [{include = "9c_signer"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.103.0"
+ethereum-kms-signer = "^0.1.6"
+uvicorn = "^0.23.2"
+psycopg2 = "^2.9.7"
+mypy = "^1.5.1"
+httpx = "^0.24.1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.7.0"
+pre-commit = "^3.3.3"
+isort = "^5.12.0"
+autoflake = "^2.2.0"
+pytest = "^7.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+exclude = "migrations"
+plugins = "pydantic.mypy"
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
