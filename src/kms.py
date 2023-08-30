@@ -2,15 +2,14 @@ import datetime
 import hashlib
 import hmac
 import logging
-import os
 from base64 import b64decode
 from hashlib import sha1
 from typing import Tuple, Union
 
 import boto3
 import eth_utils
-from Crypto.Hash import keccak
 from botocore.exceptions import ClientError
+from Crypto.Hash import keccak
 from eth_account import Account as EthAccount
 from eth_utils import to_checksum_address
 from gql import Client
@@ -19,7 +18,7 @@ from gql.transport.httpx import HTTPXTransport
 from pyasn1.codec.der.decoder import decode as der_decode
 from pyasn1.codec.der.encoder import encode as der_encode
 from pyasn1.type import namedtype, univ
-from pyasn1.type.univ import SequenceOf, Integer
+from pyasn1.type.univ import Integer, SequenceOf
 
 __all__ = "Signer"
 
@@ -50,10 +49,16 @@ class Signer:
         self.client = boto3.client("kms")  # specify region
         self._kms_key: str = kms_key
         try:
-            self.pubkey_der: bytes = self.client.get_public_key(KeyId=self._kms_key)["PublicKey"]
-            self.address: str = self.__der_encoded_public_key_to_eth_address(self.pubkey_der)
+            self.pubkey_der: bytes = self.client.get_public_key(KeyId=self._kms_key)[
+                "PublicKey"
+            ]
+            self.address: str = self.__der_encoded_public_key_to_eth_address(
+                self.pubkey_der
+            )
         except ClientError as e:
-            logging.error(f"An error occurred getting KMS Key with Key ID \"{self._kms_key}\".")
+            logging.error(
+                f'An error occurred getting KMS Key with Key ID "{self._kms_key}".'
+            )
             logging.error(e)
             raise e
 
@@ -120,9 +125,9 @@ class Signer:
 
         raise ValueError("Invalid Signature, cannot compute v, addresses do not match!")
 
-    def __get_sig_r_s_v(self,
-                        msg_hash: bytes, signature: bytes, address: str
-                        ) -> Tuple[int, int, int]:
+    def __get_sig_r_s_v(
+        self, msg_hash: bytes, signature: bytes, address: str
+    ) -> Tuple[int, int, int]:
         """
         Given a message hash, a KMS signature and an ethereum address calculate r,
         s, and v.
@@ -216,7 +221,11 @@ class Signer:
             )
             result = session.execute(query)
             return bytes.fromhex(result["transaction"]["signTransaction"])
-def derive_address(address: Union[str, bytes], key: Union[str, bytes], get_byte: bool = False) -> Union[bytes, str]:
+
+
+def derive_address(
+    address: Union[str, bytes], key: Union[str, bytes], get_byte: bool = False
+) -> Union[bytes, str]:
     """
     Derive given address using key.
     It's just like libplanet's `address.DeriveAddress(key)` function.
