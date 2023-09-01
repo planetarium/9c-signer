@@ -5,7 +5,7 @@ repos:
     -   id: mypy
         args: [--no-strict-optional, --ignore-missing-imports]
         additional_dependencies: [
-            pydantic==1.10.2,
+            pydantic==2.3.0,
         ]
 -   repo: https://github.com/psf/black
     rev: 23.7.0
