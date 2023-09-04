@@ -1,13 +1,17 @@
+import pickle
 import typing
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI
+from redis import StrictRedis
 from sqlalchemy.orm import Session
 
 from src.config import config
-from src.crud import create_transaction, get_transactions
+from src.crud import get_next_nonce, get_transactions
 from src.database import SessionLocal
-from src.schemas import Transaction
+from src.kms import Signer
+from src.schemas import SignRequest, Transaction
+from src.tasks import sign
 
 
 @lru_cache()
@@ -21,6 +25,16 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_signer():
+    signer = Signer(config.kms_key_id)
+    return signer
+
+
+def get_redis():
+    redis = StrictRedis(host=config.redis_url.host, port=config.redis_url.port, db=0)
+    return redis
 
 
 app = FastAPI()
@@ -41,6 +55,16 @@ def transactions(db: Session = Depends(get_db)):
     return get_transactions(db)
 
 
-@app.post("/transactions/", response_model=Transaction)
-def create_tx(tx: Transaction, db: Session = Depends(get_db)):
-    return create_transaction(db, tx)
+@app.post("/transactions/")
+def sign_tx(
+    action: SignRequest,
+    db: Session = Depends(get_db),
+    signer: Signer = Depends(get_signer),
+    redis: StrictRedis = Depends(get_redis),
+):
+    serialized = pickle.dumps(action)
+    nonce = get_next_nonce(db, redis, signer.address)
+    task = sign.delay(
+        serialized, "https://9c-internal-rpc-1.nine-chronicles.com/graphql", nonce
+    )
+    return {"task_id": task.id}
