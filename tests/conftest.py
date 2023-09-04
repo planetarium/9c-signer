@@ -5,6 +5,7 @@ import pytest
 import sqlalchemy as sa
 from fastapi.testclient import TestClient
 from pytest_postgresql.janitor import DatabaseJanitor
+from pytest_redis import factories
 
 from src.config import config
 from src.crud import create_transaction
@@ -13,6 +14,7 @@ from src.main import app
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
 
+redis_proc = factories.redis_proc(port=6379)
 DB_OPTS = sa.engine.url.make_url(str(config.database_url)).translate_connect_args()
 
 
