@@ -1,6 +1,8 @@
 import typing
 
+from redis import StrictRedis
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.functions import max as max_
 
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
@@ -26,3 +28,14 @@ def create_transaction(db: Session, tx: TransactionSchema) -> Transaction:
     db.commit()
     db.refresh(transaction)
     return transaction
+
+
+def get_next_nonce(db: Session, redis: StrictRedis, address: str) -> int:
+    cache_key = f"{address}_nonce"
+    if redis.exists(cache_key):
+        return redis.incr(cache_key)
+    nonce = db.query(max_(Transaction.nonce)).filter_by(signer=address).scalar()
+    if nonce is None:
+        nonce = 0
+    redis.set(cache_key, nonce, nx=True)
+    return redis.incr(cache_key)

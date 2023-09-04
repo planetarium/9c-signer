@@ -20,6 +20,9 @@ from pyasn1.codec.der.encoder import encode as der_encode
 from pyasn1.type import namedtype, univ
 from pyasn1.type.univ import Integer, SequenceOf
 
+from src.config import config
+from src.schemas import SignRequest
+
 __all__ = "Signer"
 
 
@@ -46,8 +49,14 @@ class SPKIRecord(univ.Sequence):
 
 class Signer:
     def __init__(self, kms_key: str):
-        self.client = boto3.client("kms")  # specify region
+        self.client = boto3.client(
+            "kms",
+            aws_access_key_id=config.aws_access_key_id,
+            aws_secret_access_key=config.aws_secret_access_key,
+            region_name=config.aws_default_region,
+        )  # specify region
         self._kms_key: str = kms_key
+        # rdb.set_trace()
         try:
             self.pubkey_der: bytes = self.client.get_public_key(KeyId=self._kms_key)[
                 "PublicKey"
@@ -197,12 +206,12 @@ class Signer:
         self, headless_url: str, unsigned_transaction: bytes, nonce: int
     ):
         signature = self.sign_tx(unsigned_transaction)
-        signed_transaction = self._sign_transaction(
+        signed_transaction = self.sign_transaction(
             headless_url, unsigned_transaction, signature
         )
         return signed_transaction
 
-    def _sign_transaction(
+    def sign_transaction(
         self, headless_url: str, unsigned_transaction: bytes, signature: bytes
     ) -> bytes:
         client = self._get_client(headless_url)
@@ -221,6 +230,25 @@ class Signer:
             )
             result = session.execute(query)
             return bytes.fromhex(result["transaction"]["signTransaction"])
+
+    def unsigned_tx(self, action: SignRequest, nonce: int, headless_url: str):
+        client = self._get_client(headless_url)
+        with client as session:
+            assert client.schema is not None
+            ds = DSLSchema(client.schema)
+            query = dsl_gql(
+                DSLQuery(
+                    ds.StandaloneQuery.transaction.select(
+                        ds.TransactionHeadlessQuery.unsignedTransaction.args(
+                            publicKey=self.pubkey.hex(),
+                            plainValue=action.plainValue,
+                            nonce=nonce,
+                        )
+                    )
+                )
+            )
+            result = session.execute(query)
+            return bytes.fromhex(result["transaction"]["unsignedTransaction"])
 
 
 def derive_address(

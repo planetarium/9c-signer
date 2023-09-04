@@ -22,3 +22,8 @@ class Transaction(BaseModel):
 
 class SignedTransaction(BaseModel):
     payload: str
+
+
+class SignRequest(BaseModel):
+    plainValue: str
+    staging: bool = True
