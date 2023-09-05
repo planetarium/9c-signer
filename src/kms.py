@@ -20,7 +20,6 @@ from pyasn1.codec.der.encoder import encode as der_encode
 from pyasn1.type import namedtype, univ
 from pyasn1.type.univ import Integer, SequenceOf
 
-from src.config import config
 from src.schemas import SignRequest
 
 __all__ = "Signer"
@@ -49,12 +48,7 @@ class SPKIRecord(univ.Sequence):
 
 class Signer:
     def __init__(self, kms_key: str):
-        self.client = boto3.client(
-            "kms",
-            aws_access_key_id=config.aws_access_key_id,
-            aws_secret_access_key=config.aws_secret_access_key,
-            region_name=config.aws_default_region,
-        )  # specify region
+        self.client = boto3.client("kms")  # specify region
         self._kms_key: str = kms_key
         # rdb.set_trace()
         try:
