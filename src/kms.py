@@ -47,7 +47,6 @@ class Signer:
     def __init__(self, kms_key: str):
         self.client = boto3.client("kms")  # specify region
         self._kms_key: str = kms_key
-        # rdb.set_trace()
         try:
             self.pubkey_der: bytes = self.client.get_public_key(KeyId=self._kms_key)[
                 "PublicKey"
