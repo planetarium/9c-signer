@@ -45,7 +45,8 @@ def unsigned_transaction(url: str, public_key: str, plain_value: str, nonce: int
         return bytes.fromhex(result["transaction"]["unsignedTransaction"])
 
 
-def stage_transaction(client: Client, payload: Union[str, Column[str]]) -> str:
+def stage_transaction(url: str, payload: Union[str, Column[str]]) -> str:
+    client = _get_client(url)
     with client as session:
         assert client.schema is not None
         ds = DSLSchema(client.schema)
