@@ -6,11 +6,11 @@ from fastapi import Depends, FastAPI
 from redis import StrictRedis
 from sqlalchemy.orm import Session
 
-from src.config import config
+from src.config import Settings, config
 from src.crud import get_next_nonce, get_transactions
 from src.database import SessionLocal
 from src.kms import Signer
-from src.schemas import SignRequest, Transaction
+from src.schemas import NetworkEnum, SignRequest, Transaction
 from src.tasks import sign
 
 
@@ -61,10 +61,14 @@ def sign_tx(
     db: Session = Depends(get_db),
     signer: Signer = Depends(get_signer),
     redis: StrictRedis = Depends(get_redis),
+    settings: Settings = Depends(get_settings),
 ):
+    headless_url = (
+        settings.main_headless_url
+        if action.network == NetworkEnum.MAIN
+        else settings.internal_headless_url
+    )
     serialized = pickle.dumps(action)
     nonce = get_next_nonce(db, redis, signer.address)
-    task = sign.delay(
-        serialized, "https://9c-internal-rpc-1.nine-chronicles.com/graphql", nonce
-    )
+    task = sign.delay(serialized, str(headless_url), nonce)
     return {"task_id": task.id}
