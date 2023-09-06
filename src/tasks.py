@@ -4,6 +4,7 @@ import pickle
 
 import bencodex
 from celery import Celery
+from httpx import RequestError
 from redis import StrictRedis
 
 from src.config import config
@@ -25,7 +26,7 @@ redis = StrictRedis(host=config.redis_url.host, port=config.redis_url.port, db=0
 
 
 @celery.task()
-def sign(serialized_action: bytes, headless_url: str) -> None:
+def sign(serialized_action: bytes) -> str:
     action: SignRequest = pickle.loads(serialized_action)
     signer = Signer(config.kms_key_id)
     created_at = datetime.datetime.now(datetime.timezone.utc)
@@ -45,5 +46,14 @@ def sign(serialized_action: bytes, headless_url: str) -> None:
         created_at=created_at,
     )
     create_transaction(db, tx_schema)
-    if action.staging:
-        stage_transaction(headless_url, payload)
+    return payload
+
+
+@celery.task(
+    autoretry_for=(RequestError,),
+    retry_backoff=True,
+    retry_jitter=True,
+    retry_kwargs={"max_retries": 5},
+)
+def stage(payload: str, headless_url: str):
+    stage_transaction(headless_url, payload)

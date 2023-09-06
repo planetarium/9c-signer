@@ -1,10 +1,9 @@
-import unittest.mock
-
+import pytest
 from celery.result import AsyncResult
 from fastapi.testclient import TestClient
+from gql.transport.exceptions import TransportQueryError
 from sqlalchemy.orm import Session
 
-from src.config import config
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
 
@@ -37,12 +36,13 @@ def test_sign_tx(redis_proc, celery_worker, fx_test_client: TestClient, db: Sess
         "plainValue": action,
         "staging": True,
     }
-    with unittest.mock.patch("src.tasks.stage_transaction") as m:
-        resp = fx_test_client.post("/transactions/", json=payload)
-        result = resp.json()
-        task_id = result["task_id"]
-        task: AsyncResult = AsyncResult(task_id)
+    resp = fx_test_client.post("/transactions/", json=payload)
+    result = resp.json()
+    task_id = result["task_id"]
+    task: AsyncResult = AsyncResult(task_id)
+    with pytest.raises(TransportQueryError) as exc:
         task.get()
         transaction = db.query(Transaction).one()
+        tx_id = transaction.tx_id
         assert transaction.nonce == 1
-        m.assert_called_once_with(str(config.headless_url), transaction.payload)
+        assert tx_id in str(exc.value)

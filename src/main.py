@@ -2,6 +2,7 @@ import pickle
 import typing
 from functools import lru_cache
 
+from celery import chain
 from fastapi import Depends, FastAPI
 from redis import StrictRedis
 from sqlalchemy.orm import Session
@@ -11,7 +12,7 @@ from src.crud import get_transactions
 from src.database import SessionLocal
 from src.kms import Signer
 from src.schemas import SignRequest, Transaction
-from src.tasks import sign
+from src.tasks import sign, stage
 
 
 @lru_cache()
@@ -62,5 +63,11 @@ def sign_tx(
 ):
     headless_url = str(settings.headless_url)
     serialized = pickle.dumps(action)
-    task = sign.delay(serialized, headless_url)
-    return {"task_id": task.id}
+    if action.staging:
+        chain_task = chain(sign.s(serialized), stage.s(headless_url))()
+        task_id = chain_task.id
+    else:
+        task = sign.delay(serialized)
+        task_id = task.id
+
+    return {"task_id": task_id}
