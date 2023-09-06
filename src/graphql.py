@@ -1,9 +1,6 @@
-from typing import Union
-
 from gql import Client
 from gql.dsl import DSLMutation, DSLQuery, DSLSchema, dsl_gql
 from gql.transport.httpx import HTTPXTransport
-from sqlalchemy import Column
 
 
 def sign_transaction(url: str, unsigned_tx: bytes, signature: bytes) -> bytes:
@@ -45,7 +42,7 @@ def unsigned_transaction(url: str, public_key: str, plain_value: str, nonce: int
         return bytes.fromhex(result["transaction"]["unsignedTransaction"])
 
 
-def stage_transaction(url: str, payload: Union[str, Column[str]]) -> str:
+def stage_transaction(url: str, payload: str) -> str:
     client = _get_client(url)
     with client as session:
         assert client.schema is not None
