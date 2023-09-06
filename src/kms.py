@@ -180,7 +180,7 @@ class Signer:
             # Signer
             b"s": bytes.fromhex(address),
             # Timestamp
-            b"t": time_stamp.isoformat(),
+            b"t": time_stamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             # Updated addresses
             b"u": [],
         }

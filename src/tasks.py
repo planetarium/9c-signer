@@ -28,7 +28,7 @@ redis = StrictRedis(host=config.redis_url.host, port=config.redis_url.port, db=0
 def sign(serialized_action: bytes, headless_url: str) -> None:
     action: SignRequest = pickle.loads(serialized_action)
     signer = Signer(config.kms_key_id)
-    created_at = datetime.datetime.utcnow()
+    created_at = datetime.datetime.now(datetime.timezone.utc)
     nonce = get_next_nonce(db, redis, signer.address)
     unsigned_tx = signer.unsigned_tx(nonce, action.plainValue, created_at)
     signature = signer.sign_tx(bencodex.dumps(unsigned_tx))
