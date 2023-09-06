@@ -1,5 +1,4 @@
 import datetime
-import enum
 import typing
 
 from pydantic import BaseModel, field_serializer
@@ -25,12 +24,6 @@ class SignedTransaction(BaseModel):
     payload: str
 
 
-class NetworkEnum(str, enum.Enum):
-    MAIN = "main"
-    INTERNAL = "internal"
-
-
 class SignRequest(BaseModel):
     plainValue: str
     staging: bool = True
-    network: NetworkEnum = NetworkEnum.MAIN

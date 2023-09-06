@@ -11,8 +11,7 @@ class Settings(BaseSettings):
     celery_broker_url: str
     celery_result_backend: str
     redis_url: RedisDsn
-    internal_headless_url: AnyHttpUrl
-    main_headless_url: AnyHttpUrl
+    headless_url: AnyHttpUrl
 
 
 config = Settings()

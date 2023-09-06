@@ -10,7 +10,7 @@ from src.config import Settings, config
 from src.crud import get_next_nonce, get_transactions
 from src.database import SessionLocal
 from src.kms import Signer
-from src.schemas import NetworkEnum, SignRequest, Transaction
+from src.schemas import SignRequest, Transaction
 from src.tasks import sign
 
 
@@ -63,12 +63,8 @@ def sign_tx(
     redis: StrictRedis = Depends(get_redis),
     settings: Settings = Depends(get_settings),
 ):
-    headless_url = (
-        settings.main_headless_url
-        if action.network == NetworkEnum.MAIN
-        else settings.internal_headless_url
-    )
+    headless_url = str(settings.headless_url)
     serialized = pickle.dumps(action)
     nonce = get_next_nonce(db, redis, signer.address)
-    task = sign.delay(serialized, str(headless_url), nonce)
+    task = sign.delay(serialized, headless_url, nonce)
     return {"task_id": task.id}

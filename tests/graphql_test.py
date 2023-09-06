@@ -10,5 +10,5 @@ def test_stage_transaction():
     tx_id = "1d0b85d2d8d0617ec36e1ad2620ba008f4f618be3d70bbfc0f92e02b37b27fe8"
     # raise exc because given transaction is obsolete.
     with pytest.raises(TransportQueryError) as exc:
-        stage_transaction(str(config.internal_headless_url), payload)
+        stage_transaction(str(config.headless_url), payload)
         assert tx_id in str(exc.value)

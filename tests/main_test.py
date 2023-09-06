@@ -36,7 +36,6 @@ def test_sign_tx(redis_proc, celery_worker, fx_test_client: TestClient, db: Sess
     payload = {
         "plainValue": action,
         "staging": True,
-        "network": "internal",
     }
     with unittest.mock.patch("src.tasks.stage_transaction") as m:
         resp = fx_test_client.post("/transactions/", json=payload)
@@ -46,6 +45,4 @@ def test_sign_tx(redis_proc, celery_worker, fx_test_client: TestClient, db: Sess
         task.get(timeout=10)
         transaction = db.query(Transaction).one()
         assert transaction.nonce == 1
-        m.assert_called_once_with(
-            str(config.internal_headless_url), transaction.payload
-        )
+        m.assert_called_once_with(str(config.headless_url), transaction.payload)
