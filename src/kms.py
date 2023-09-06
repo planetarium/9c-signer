@@ -11,14 +11,12 @@ from botocore.exceptions import ClientError
 from Crypto.Hash import keccak
 from eth_account import Account as EthAccount
 from eth_utils import to_checksum_address
-from gql import Client
-from gql.dsl import DSLQuery, DSLSchema, dsl_gql
-from gql.transport.httpx import HTTPXTransport
 from pyasn1.codec.der.decoder import decode as der_decode
 from pyasn1.codec.der.encoder import encode as der_encode
 from pyasn1.type import namedtype, univ
 from pyasn1.type.univ import Integer, SequenceOf
 
+from src.graphql import sign_transaction, unsigned_transaction
 from src.schemas import SignRequest
 
 __all__ = "Signer"
@@ -159,58 +157,21 @@ class Signer:
         seq.extend([r, min(s, n - s)])
         return der_encode(seq)
 
-    @staticmethod
-    def _get_client(headless_url: str) -> Client:
-        transport = HTTPXTransport(url=headless_url)
-        return Client(transport=transport, fetch_schema_from_transport=True)
-
-    def _sign_and_save(
-        self, headless_url: str, unsigned_transaction: bytes, nonce: int
-    ):
-        signature = self.sign_tx(unsigned_transaction)
-        signed_transaction = self.sign_transaction(
-            headless_url, unsigned_transaction, signature
-        )
+    def _sign_and_save(self, headless_url: str, unsigned_tx: bytes):
+        signature = self.sign_tx(unsigned_tx)
+        signed_transaction = self.sign_transaction(headless_url, unsigned_tx, signature)
         return signed_transaction
 
+    @staticmethod
     def sign_transaction(
-        self, headless_url: str, unsigned_transaction: bytes, signature: bytes
+        headless_url: str, unsigned_tx: bytes, signature: bytes
     ) -> bytes:
-        client = self._get_client(headless_url)
-        with client as session:
-            assert client.schema is not None
-            ds = DSLSchema(client.schema)
-            query = dsl_gql(
-                DSLQuery(
-                    ds.StandaloneQuery.transaction.select(
-                        ds.TransactionHeadlessQuery.signTransaction.args(
-                            unsignedTransaction=unsigned_transaction.hex(),
-                            signature=signature.hex(),
-                        )
-                    )
-                )
-            )
-            result = session.execute(query)
-            return bytes.fromhex(result["transaction"]["signTransaction"])
+        return sign_transaction(headless_url, unsigned_tx, signature)
 
     def unsigned_tx(self, action: SignRequest, nonce: int, headless_url: str):
-        client = self._get_client(headless_url)
-        with client as session:
-            assert client.schema is not None
-            ds = DSLSchema(client.schema)
-            query = dsl_gql(
-                DSLQuery(
-                    ds.StandaloneQuery.transaction.select(
-                        ds.TransactionHeadlessQuery.unsignedTransaction.args(
-                            publicKey=self.pubkey.hex(),
-                            plainValue=action.plainValue,
-                            nonce=nonce,
-                        )
-                    )
-                )
-            )
-            result = session.execute(query)
-            return bytes.fromhex(result["transaction"]["unsignedTransaction"])
+        return unsigned_transaction(
+            headless_url, self.pubkey.hex(), action.plainValue, nonce
+        )
 
 
 def derive_address(
