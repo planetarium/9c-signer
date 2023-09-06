@@ -1,10 +1,12 @@
+import datetime
 import hashlib
 import hmac
 import logging
 from base64 import b64decode
 from hashlib import sha1
-from typing import Tuple, Union
+from typing import Any, Tuple, Union
 
+import bencodex
 import boto3
 import eth_utils
 from botocore.exceptions import ClientError
@@ -15,9 +17,6 @@ from pyasn1.codec.der.decoder import decode as der_decode
 from pyasn1.codec.der.encoder import encode as der_encode
 from pyasn1.type import namedtype, univ
 from pyasn1.type.univ import Integer, SequenceOf
-
-from src.graphql import sign_transaction, unsigned_transaction
-from src.schemas import SignRequest
 
 __all__ = "Signer"
 
@@ -156,21 +155,40 @@ class Signer:
         seq.extend([r, min(s, n - s)])
         return der_encode(seq)
 
-    def _sign_and_save(self, headless_url: str, unsigned_tx: bytes):
-        signature = self.sign_tx(unsigned_tx)
-        signed_transaction = self.sign_transaction(headless_url, unsigned_tx, signature)
-        return signed_transaction
+    def unsigned_tx(
+        self, nonce: int, plain_value: str, time_stamp: datetime.datetime
+    ) -> dict[bytes, Any]:
+        address = self.address
+        if address.startswith("0x"):
+            address = address[2:]
+        return {
+            # Raw action value
+            b"a": [bencodex.loads(bytes.fromhex(plain_value))],
+            # Genesis block hash
+            b"g": b"E\x82%\r\r\xa3;\x06w\x9a\x84u\xd2\x83\xd5\xdd!\x0ch;\x9b\x99\x9dt\xd0?\xacOX\xfak\xce",
+            # GasLimit (see also GasLimit list section below)
+            b"l": 1,
+            # MaxGasPrice (see also Mead section for the currency spec)
+            b"m": [
+                {"decimalPlaces": b"\x12", "minters": None, "ticker": "Mead"},
+                1000000000000000000,
+            ],
+            # Nonce
+            b"n": nonce,
+            # Public key
+            b"p": self.pubkey,
+            # Signer
+            b"s": bytes.fromhex(address),
+            # Timestamp
+            b"t": time_stamp.isoformat(),
+            # Updated addresses
+            b"u": [],
+        }
 
     @staticmethod
-    def sign_transaction(
-        headless_url: str, unsigned_tx: bytes, signature: bytes
-    ) -> bytes:
-        return sign_transaction(headless_url, unsigned_tx, signature)
-
-    def unsigned_tx(self, action: SignRequest, nonce: int, headless_url: str):
-        return unsigned_transaction(
-            headless_url, self.pubkey.hex(), action.plainValue, nonce
-        )
+    def attach_sign(unsigned: dict[bytes, Any], sign: bytes) -> dict[bytes, Any]:
+        unsigned[b"S"] = sign
+        return unsigned
 
 
 def derive_address(
