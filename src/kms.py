@@ -1,4 +1,3 @@
-import datetime
 import hashlib
 import hmac
 import logging
@@ -164,37 +163,6 @@ class Signer:
     def _get_client(headless_url: str) -> Client:
         transport = HTTPXTransport(url=headless_url)
         return Client(transport=transport, fetch_schema_from_transport=True)
-
-    def transfer_assets(
-        self,
-        time_stamp: datetime.datetime,
-        nonce: int,
-        recipients,
-        memo: str,
-        headless_url: str,
-    ):
-        client = self._get_client(headless_url)
-        with client as session:
-            assert client.schema is not None
-            ds = DSLSchema(client.schema)
-            query = dsl_gql(
-                DSLQuery(
-                    ds.StandaloneQuery.actionTxQuery.args(
-                        publicKey=self.pubkey.hex(),
-                        timestamp=time_stamp.isoformat(),
-                        nonce=nonce,
-                    ).select(
-                        ds.ActionTxQuery.transferAssets.args(
-                            sender=self.address, recipients=recipients, memo=memo
-                        )
-                    )
-                )
-            )
-            result = session.execute(query)
-            unsigned_transaction = bytes.fromhex(
-                result["actionTxQuery"]["transferAssets"]
-            )
-            return self._sign_and_save(headless_url, unsigned_transaction, nonce)
 
     def _sign_and_save(
         self, headless_url: str, unsigned_transaction: bytes, nonce: int
