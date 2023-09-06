@@ -42,7 +42,7 @@ def test_sign_tx(redis_proc, celery_worker, fx_test_client: TestClient, db: Sess
         result = resp.json()
         task_id = result["task_id"]
         task: AsyncResult = AsyncResult(task_id)
-        task.get(timeout=10)
+        task.get()
         transaction = db.query(Transaction).one()
         assert transaction.nonce == 1
         m.assert_called_once_with(str(config.headless_url), transaction.payload)

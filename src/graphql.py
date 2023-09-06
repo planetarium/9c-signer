@@ -56,4 +56,6 @@ def stage_transaction(url: str, payload: str) -> str:
 
 def _get_client(url: str):
     transport = HTTPXTransport(url=url)
-    return Client(transport=transport, fetch_schema_from_transport=True)
+    return Client(
+        transport=transport, fetch_schema_from_transport=True, execute_timeout=None
+    )
