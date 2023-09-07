@@ -14,6 +14,7 @@ from src.database import Base, SessionLocal, engine
 from src.main import app
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
+from src.schemas import TransactionResult
 
 redis_proc = factories.redis_proc(port=6379)
 DB_OPTS = sa.engine.url.make_url(str(config.database_url)).translate_connect_args()
@@ -56,7 +57,7 @@ def fx_test_client() -> TestClient:
 def fx_tx_schema() -> TransactionSchema:
     return TransactionSchema(
         tx_id="tx_id",
-        tx_result=None,
+        tx_result=TransactionResult.CREATED,
         payload="payload",
         signer="signer",
         nonce=1,

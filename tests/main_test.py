@@ -1,11 +1,10 @@
-import pytest
 from celery.result import AsyncResult
 from fastapi.testclient import TestClient
-from gql.transport.exceptions import TransportQueryError
 from sqlalchemy.orm import Session
 
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
+from src.schemas import TransactionResult
 
 
 def test_main(fx_test_client: TestClient):
@@ -41,10 +40,11 @@ def test_sign_tx(redis_proc, celery_worker, fx_test_client: TestClient, db: Sess
     resp = fx_test_client.post("/transactions/", json=payload)
     result = resp.json()
     task_id = result["task_id"]
-    task: AsyncResult = AsyncResult(task_id)
-    with pytest.raises(TransportQueryError) as exc:
-        task.get()
-        transaction = db.query(Transaction).one()
-        tx_id = transaction.tx_id
-        assert transaction.nonce == 1
-        assert tx_id in str(exc.value)
+    chain_task_id = result["chain_task_id"]
+    task: AsyncResult = AsyncResult(chain_task_id)
+    task.get()
+    resp = fx_test_client.get(f"/transactions/{task_id}/")
+    result = resp.json()
+    assert result["task_id"] == str(task_id)
+    assert result["nonce"] == 1
+    assert result["tx_result"] == TransactionResult.INVALID

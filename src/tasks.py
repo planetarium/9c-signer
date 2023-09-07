@@ -4,11 +4,17 @@ import pickle
 
 import bencodex
 from celery import Celery
+from gql.transport.exceptions import TransportQueryError
 from httpx import RequestError
 from redis import StrictRedis
 
 from src.config import config
-from src.crud import create_transaction, get_next_nonce
+from src.crud import (
+    create_transaction,
+    get_next_nonce,
+    get_transaction,
+    put_transaction,
+)
 from src.database import SessionLocal
 from src.graphql import stage_transaction
 from src.kms import Signer
@@ -48,7 +54,7 @@ def sign(self, serialized_action: bytes) -> str:
         task_id=self.request.id,
     )
     create_transaction(db, tx_schema)
-    return payload
+    return tx_id
 
 
 @celery.task(
@@ -57,5 +63,13 @@ def sign(self, serialized_action: bytes) -> str:
     retry_jitter=True,
     retry_kwargs={"max_retries": 5},
 )
-def stage(payload: str, headless_url: str):
-    stage_transaction(headless_url, payload)
+def stage(tx_id: str, headless_url: str) -> str:
+    tx = get_transaction(db, tx_id)
+    try:
+        stage_transaction(headless_url, tx.payload)
+    except TransportQueryError:
+        tx.tx_result = TransactionResult.INVALID
+    else:
+        tx.tx_result = TransactionResult.STAGED
+    put_transaction(db, tx)
+    return tx_id

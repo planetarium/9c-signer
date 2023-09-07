@@ -69,11 +69,7 @@ def sign_tx(
 ):
     headless_url = str(settings.headless_url)
     serialized = pickle.dumps(action)
-    if action.staging:
-        chain_task = chain(sign.s(serialized), stage.s(headless_url))()
-        task_id = chain_task.id
-    else:
-        task = sign.delay(serialized)
-        task_id = task.id
-
-    return {"task_id": task_id}
+    chain_task = chain(sign.s(serialized), stage.s(headless_url))()
+    task_id = chain_task.parent.id
+    chain_task_id = chain_task.id
+    return {"task_id": task_id, "chain_task_id": chain_task_id}

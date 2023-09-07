@@ -50,3 +50,10 @@ def get_next_nonce(db: Session, redis: StrictRedis, address: str) -> int:
         nonce = 0
     redis.set(cache_key, nonce, nx=True)
     return redis.incr(cache_key)
+
+
+def put_transaction(db: Session, tx: Transaction) -> Transaction:
+    db.add(tx)
+    db.commit()
+    db.refresh(tx)
+    return tx
