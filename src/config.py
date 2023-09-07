@@ -1,13 +1,5 @@
-from typing import TYPE_CHECKING
-
+from pydantic import AnyHttpUrl, PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-if TYPE_CHECKING:
-    PostgresDsn = str
-    RedisDsn = str
-else:
-    from pydantic import PostgresDsn, RedisDsn
-
 
 __all__ = "config"
 
@@ -19,6 +11,7 @@ class Settings(BaseSettings):
     celery_broker_url: str
     celery_result_backend: str
     redis_url: RedisDsn
+    headless_url: AnyHttpUrl
 
 
 config = Settings()

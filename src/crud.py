@@ -1,4 +1,5 @@
 import typing
+import uuid
 
 from redis import StrictRedis
 from sqlalchemy.orm import Session
@@ -8,8 +9,16 @@ from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
 
 
-def get_transaction(db: Session, tx_id: str) -> typing.Optional[Transaction]:
-    return db.query(Transaction).filter(Transaction.tx_id == tx_id).first()
+def get_transaction(db: Session, tx_id: str) -> Transaction:
+    tx = db.query(Transaction).filter(Transaction.tx_id == tx_id).one()
+    return tx
+
+
+def get_transaction_by_task_id(
+    db: Session, task_id: uuid.UUID
+) -> typing.Optional[Transaction]:
+    tx = db.query(Transaction).filter(Transaction.task_id == task_id).first()
+    return tx
 
 
 def get_transactions(db: Session) -> typing.List[Transaction]:
@@ -23,6 +32,8 @@ def create_transaction(db: Session, tx: TransactionSchema) -> Transaction:
         signer=tx.signer,
         payload=tx.payload,
         created_at=tx.created_at,
+        task_id=tx.task_id,
+        tx_result=tx.tx_result,
     )
     db.add(transaction)
     db.commit()
@@ -39,3 +50,10 @@ def get_next_nonce(db: Session, redis: StrictRedis, address: str) -> int:
         nonce = 0
     redis.set(cache_key, nonce, nx=True)
     return redis.incr(cache_key)
+
+
+def put_transaction(db: Session, tx: Transaction) -> Transaction:
+    db.add(tx)
+    db.commit()
+    db.refresh(tx)
+    return tx

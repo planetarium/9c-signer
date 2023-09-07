@@ -1,17 +1,19 @@
 import pickle
 import typing
+import uuid
 from functools import lru_cache
 
+from celery import chain
 from fastapi import Depends, FastAPI
 from redis import StrictRedis
 from sqlalchemy.orm import Session
 
-from src.config import config
-from src.crud import get_next_nonce, get_transactions
+from src.config import Settings, config
+from src.crud import get_transaction_by_task_id, get_transactions
 from src.database import SessionLocal
 from src.kms import Signer
 from src.schemas import SignRequest, Transaction
-from src.tasks import sign
+from src.tasks import sign, stage
 
 
 @lru_cache()
@@ -55,16 +57,19 @@ def transactions(db: Session = Depends(get_db)):
     return get_transactions(db)
 
 
+@app.get("/transactions/{task_id}/", response_model=typing.Optional[Transaction])
+def get_transaction(task_id: uuid.UUID, db: Session = Depends(get_db)):
+    return get_transaction_by_task_id(db, task_id)
+
+
 @app.post("/transactions/")
 def sign_tx(
     action: SignRequest,
-    db: Session = Depends(get_db),
-    signer: Signer = Depends(get_signer),
-    redis: StrictRedis = Depends(get_redis),
+    settings: Settings = Depends(get_settings),
 ):
+    headless_url = str(settings.headless_url)
     serialized = pickle.dumps(action)
-    nonce = get_next_nonce(db, redis, signer.address)
-    task = sign.delay(
-        serialized, "https://9c-internal-rpc-1.nine-chronicles.com/graphql", nonce
-    )
-    return {"task_id": task.id}
+    chain_task = chain(sign.s(serialized), stage.s(headless_url))()
+    task_id = chain_task.parent.id
+    chain_task_id = chain_task.id
+    return {"task_id": task_id, "chain_task_id": chain_task_id}

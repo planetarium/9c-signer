@@ -37,5 +37,10 @@ jobs:
           CELERY_BROKER_URL: ${{ secrets.CELERY_BROKER_URL }}
           CELERY_RESULT_BACKEND: ${{ secrets.CELERY_RESULT_BACKEND }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
+          HEADLESS_URL: ${{ secrets.HEADLESS_URL }}
         run: |
-          poetry run pytest --redis-exec=$(which redis-server)
+          poetry run pytest --redis-exec=$(which redis-server) --cov src --cov-report=xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
