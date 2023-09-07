@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from typing import Generator
 
 import pytest
@@ -60,6 +61,7 @@ def fx_tx_schema() -> TransactionSchema:
         signer="signer",
         nonce=1,
         created_at=datetime.datetime.utcnow(),
+        task_id=uuid.uuid4(),
     )
 
 

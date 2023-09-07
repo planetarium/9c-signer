@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional, cast
 
 import pytest
@@ -26,7 +27,11 @@ def test_get_next_nonce_from_db(
     assert not redisdb.exists(cache_key)
     for nonce in nonce_list:
         tx = Transaction(
-            nonce=nonce, tx_id=str(nonce), signer=address, payload="payload"
+            nonce=nonce,
+            tx_id=str(nonce),
+            signer=address,
+            payload="payload",
+            task_id=uuid.uuid4(),
         )
         db.add(tx)
     db.flush()

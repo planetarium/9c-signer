@@ -14,6 +14,7 @@ from src.graphql import stage_transaction
 from src.kms import Signer
 from src.schemas import SignRequest
 from src.schemas import Transaction as TransactionSchema
+from src.schemas import TransactionResult
 
 celery = Celery()
 celery.conf.update(config)
@@ -25,8 +26,8 @@ db = SessionLocal()
 redis = StrictRedis(host=config.redis_url.host, port=config.redis_url.port, db=0)
 
 
-@celery.task()
-def sign(serialized_action: bytes) -> str:
+@celery.task(bind=True)
+def sign(self, serialized_action: bytes) -> str:
     action: SignRequest = pickle.loads(serialized_action)
     signer = Signer(config.kms_key_id)
     created_at = datetime.datetime.now(datetime.timezone.utc)
@@ -39,11 +40,12 @@ def sign(serialized_action: bytes) -> str:
     payload = serialized.hex()
     tx_schema = TransactionSchema(
         tx_id=tx_id,
-        tx_result=None,
+        tx_result=TransactionResult.CREATED,
         payload=payload,
         signer=signer.address,
         nonce=nonce,
         created_at=created_at,
+        task_id=self.request.id,
     )
     create_transaction(db, tx_schema)
     return payload

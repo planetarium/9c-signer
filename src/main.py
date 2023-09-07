@@ -1,5 +1,6 @@
 import pickle
 import typing
+import uuid
 from functools import lru_cache
 
 from celery import chain
@@ -8,7 +9,7 @@ from redis import StrictRedis
 from sqlalchemy.orm import Session
 
 from src.config import Settings, config
-from src.crud import get_transactions
+from src.crud import get_transaction_by_task_id, get_transactions
 from src.database import SessionLocal
 from src.kms import Signer
 from src.schemas import SignRequest, Transaction
@@ -54,6 +55,11 @@ async def pong():
 @app.get("/transactions/", response_model=typing.List[Transaction])
 def transactions(db: Session = Depends(get_db)):
     return get_transactions(db)
+
+
+@app.get("/transactions/{task_id}/", response_model=typing.Optional[Transaction])
+def get_transaction(task_id: uuid.UUID, db: Session = Depends(get_db)):
+    return get_transaction_by_task_id(db, task_id)
 
 
 @app.post("/transactions/")

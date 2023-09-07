@@ -1,6 +1,7 @@
 import datetime
+import uuid
 
-from sqlalchemy import DateTime, Integer, String, UniqueConstraint
+from sqlalchemy import UUID, DateTime, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base
@@ -17,5 +18,7 @@ class Transaction(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.datetime.utcnow
     )
+    task_id: Mapped[uuid.UUID] = mapped_column(UUID, nullable=False)
+    exc: Mapped[str] = mapped_column(String, nullable=True)
 
     __table_args__ = (UniqueConstraint(signer, nonce),)

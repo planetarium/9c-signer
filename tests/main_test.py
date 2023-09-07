@@ -26,7 +26,9 @@ def test_get_transactions(
     resp = fx_test_client.get("/transactions/")
     assert resp.status_code == 200
     result = resp.json()
-    assert result == [fx_tx_schema.model_dump()]
+    expected = fx_tx_schema.model_dump()
+    expected["task_id"] = str(expected["task_id"])
+    assert result == [expected]
 
 
 def test_sign_tx(redis_proc, celery_worker, fx_test_client: TestClient, db: Session):
