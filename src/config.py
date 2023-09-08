@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     celery_result_backend: str
     redis_url: RedisDsn
     headless_url: AnyHttpUrl
+    sync_interval: int = 60
 
 
 config = Settings()

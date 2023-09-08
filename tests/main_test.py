@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
-from src.schemas import TransactionResult
+from src.schemas import TransactionStatus
 
 
 def test_main(fx_test_client: TestClient):
@@ -47,4 +47,4 @@ def test_sign_tx(redis_proc, celery_worker, fx_test_client: TestClient, db: Sess
     result = resp.json()
     assert result["task_id"] == str(task_id)
     assert result["nonce"] == 1
-    assert result["tx_result"] == TransactionResult.INVALID
+    assert result["tx_result"] == TransactionStatus.INVALID

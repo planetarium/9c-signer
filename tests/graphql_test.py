@@ -2,7 +2,8 @@ import pytest
 from gql.transport.exceptions import TransportQueryError
 
 from src.config import config
-from src.graphql import stage_transaction
+from src.graphql import check_transaction_result, stage_transaction
+from src.schemas import TransactionStatus
 
 
 def test_stage_transaction():
@@ -12,3 +13,10 @@ def test_stage_transaction():
     with pytest.raises(TransportQueryError) as exc:
         stage_transaction(str(config.headless_url), payload)
         assert tx_id in str(exc.value)
+
+
+def test_check_transaction_result():
+    tx_id = "4d4209adfb326f810a1ad7aa0141d21253b763e4942e90a145413b685fd971bc"
+    result = check_transaction_result(str(config.headless_url), tx_id)
+    assert result.txStatus == TransactionStatus.SUCCESS
+    assert result.exceptionName is None

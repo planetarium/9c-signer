@@ -7,6 +7,7 @@ from sqlalchemy.sql.functions import max as max_
 
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
+from src.schemas import TransactionStatus
 
 
 def get_transaction(db: Session, tx_id: str) -> Transaction:
@@ -21,8 +22,10 @@ def get_transaction_by_task_id(
     return tx
 
 
-def get_transactions(db: Session) -> typing.List[Transaction]:
-    return db.query(Transaction).all()
+def get_transactions(
+    db: Session, status: TransactionStatus
+) -> typing.List[Transaction]:
+    return db.query(Transaction).filter(Transaction.tx_result == status).all()
 
 
 def create_transaction(db: Session, tx: TransactionSchema) -> Transaction:
