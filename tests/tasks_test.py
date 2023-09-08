@@ -9,13 +9,14 @@ from src.schemas import Transaction, TransactionStatus
 from src.tasks import sync_tx_result
 
 
+# FIXME hang run with main_test
 def test_sync_tx_result(
-    redis_proc, celery_worker, db: Session, fx_kms_signer, fx_test_client
+    celery_session_worker, db: Session, fx_kms_signer, fx_test_client
 ):
     tx_id = "bc1ad2658ba6f9a494f0137340f4f82266e65f4942d0a40db2ab54b34b24c001"
     schema = Transaction(
         tx_id=tx_id,
-        nonce=0,
+        nonce=10000,
         tx_result=TransactionStatus.STAGED,
         signer=fx_kms_signer.address,
         payload="payload",
@@ -31,5 +32,5 @@ def test_sync_tx_result(
     resp = fx_test_client.get(f"/transactions/{task_id}/")
     result = resp.json()
     assert result["task_id"] == str(task_id)
-    assert result["nonce"] == 0
+    assert result["nonce"] == 10000
     assert result["tx_result"] != TransactionStatus.STAGED

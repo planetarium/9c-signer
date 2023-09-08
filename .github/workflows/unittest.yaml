@@ -39,7 +39,8 @@ jobs:
           REDIS_URL: ${{ secrets.REDIS_URL }}
           HEADLESS_URL: ${{ secrets.HEADLESS_URL }}
         run: |
-          poetry run pytest --redis-exec=$(which redis-server) --cov src --cov-report=xml
+          poetry run pytest --redis-exec=$(which redis-server) --ignore tests/tasks_test.py --cov src --cov-report=xml
+          poetry run pytest --redis-exec=$(which redis-server) tests/tasks_test.py
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         env:

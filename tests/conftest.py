@@ -75,3 +75,8 @@ def fx_tx(db, fx_tx_schema: TransactionSchema) -> Transaction:
 @pytest.fixture(scope="session")
 def fx_kms_signer() -> Signer:
     return Signer(kms_key=config.kms_key_id)
+
+
+@pytest.fixture(scope="session")
+def celery_enable_logging(redis_proc):
+    return True
