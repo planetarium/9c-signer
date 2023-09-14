@@ -11,10 +11,12 @@ from pytest_redis import factories
 from src.config import config
 from src.crud import create_transaction
 from src.database import Base, SessionLocal, engine
+from src.kms import Signer
 from src.main import app
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
-from src.schemas import TransactionResult
+from src.schemas import TransactionStatus
+from src.tasks import SessionTask
 
 redis_proc = factories.redis_proc(port=6379)
 DB_OPTS = sa.engine.url.make_url(str(config.database_url)).translate_connect_args()
@@ -57,7 +59,7 @@ def fx_test_client() -> TestClient:
 def fx_tx_schema() -> TransactionSchema:
     return TransactionSchema(
         tx_id="tx_id",
-        tx_result=TransactionResult.CREATED,
+        tx_result=TransactionStatus.CREATED,
         payload="payload",
         signer="signer",
         nonce=1,
@@ -69,3 +71,18 @@ def fx_tx_schema() -> TransactionSchema:
 @pytest.fixture
 def fx_tx(db, fx_tx_schema: TransactionSchema) -> Transaction:
     return create_transaction(db, fx_tx_schema)
+
+
+@pytest.fixture(scope="session")
+def fx_kms_signer() -> Signer:
+    return Signer(kms_key=config.kms_key_id)
+
+
+@pytest.fixture(scope="session")
+def celery_enable_logging(redis_proc):
+    return True
+
+
+@pytest.fixture(scope="session")
+def celery_parameters():
+    return {"task_cls": SessionTask}

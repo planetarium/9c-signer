@@ -3,20 +3,20 @@ import typing
 import uuid
 from enum import Enum
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, field_serializer, field_validator
 
 
-class TransactionResult(str, Enum):
+class TransactionStatus(str, Enum):
     CREATED = "CREATED"
-    STAGED = "STAGED"
-    FAILED = "FAILED"
+    STAGING = "STAGING"
+    FAILURE = "FAILURE"
     SUCCESS = "SUCCESS"
     INVALID = "INVALID"
 
 
 class Transaction(BaseModel):
     tx_id: str
-    tx_result: TransactionResult
+    tx_result: TransactionStatus
     payload: str
     signer: str
     nonce: int
@@ -35,3 +35,21 @@ class Transaction(BaseModel):
 class SignRequest(BaseModel):
     plainValue: str
     staging: bool = True
+
+
+class TransactionResult(BaseModel):
+    txStatus: TransactionStatus
+    exceptionName: typing.Optional[str] = None
+
+    @classmethod
+    @field_validator("txStatus")
+    def validate_tx_status(cls, v: str) -> TransactionStatus:
+        if v.upper() == "SUCCESS":
+            return TransactionStatus.SUCCESS
+        if v.upper() == "INVALID":
+            return TransactionStatus.INVALID
+        if v.upper() == "STAGING":
+            return TransactionStatus.STAGING
+        if v.upper() == "CREATED":
+            return TransactionStatus.CREATED
+        return TransactionStatus.FAILURE
