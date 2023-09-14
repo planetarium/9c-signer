@@ -15,7 +15,7 @@ from src.config import config
 from src.crud import (
     create_transaction,
     get_next_nonce,
-    get_transaction,
+    get_transaction_by_tx_id,
     get_transactions,
     put_transaction,
 )
@@ -83,7 +83,7 @@ def sign(self, serialized_action: bytes) -> str:
     bind=True,
 )
 def stage(self, tx_id: str, headless_url: str) -> str:
-    tx = get_transaction(self.db, tx_id)
+    tx = get_transaction_by_tx_id(self.db, tx_id)
     try:
         stage_transaction(headless_url, tx.payload)
     except TransportQueryError:
@@ -112,7 +112,7 @@ def sync_tx_result(self) -> GroupResult:
 )
 def tx_result(self, tx_id: str, headless_url: str):
     result = check_transaction_result(headless_url, tx_id)
-    tx = get_transaction(self.db, tx_id)
+    tx = get_transaction_by_tx_id(self.db, tx_id)
     tx.tx_result = result.txStatus
     if result.exceptionName is not None:
         tx.exc = result.exceptionName

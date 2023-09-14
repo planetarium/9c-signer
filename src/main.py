@@ -11,7 +11,11 @@ from redis import StrictRedis
 from sqlalchemy.orm import Session
 
 from src.config import Settings, config
-from src.crud import get_transaction_by_task_id, get_transactions
+from src.crud import (
+    get_transaction_by_task_id,
+    get_transaction_by_tx_id,
+    get_transactions,
+)
 from src.database import SessionLocal
 from src.kms import Signer
 from src.schemas import SignRequest, Transaction, TransactionStatus
@@ -73,8 +77,13 @@ def transactions(db: Session = Depends(get_db)):
     return get_transactions(db, status=TransactionStatus.CREATED)
 
 
-@app.get("/transactions/{task_id}/", response_model=typing.Optional[Transaction])
-def get_transaction(task_id: uuid.UUID, db: Session = Depends(get_db)):
+@app.get("/transactions/{tx_id}/", response_model=typing.Optional[Transaction])
+def get_transaction_tx_id(tx_id: str, db: Session = Depends(get_db)):
+    return get_transaction_by_tx_id(db, tx_id)
+
+
+@app.get("/transactions/tasks/{task_id}/", response_model=typing.Optional[Transaction])
+def get_transaction_task_id(task_id: uuid.UUID, db: Session = Depends(get_db)):
     return get_transaction_by_task_id(db, task_id)
 
 

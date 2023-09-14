@@ -10,7 +10,7 @@ from src.schemas import Transaction as TransactionSchema
 from src.schemas import TransactionStatus
 
 
-def get_transaction(db: Session, tx_id: str) -> Transaction:
+def get_transaction_by_tx_id(db: Session, tx_id: str) -> Transaction:
     tx = db.query(Transaction).filter(Transaction.tx_id == tx_id).one()
     return tx
 
