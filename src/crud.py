@@ -44,15 +44,18 @@ def create_transaction(db: Session, tx: TransactionSchema) -> Transaction:
     return transaction
 
 
-def get_next_nonce(db: Session, redis: StrictRedis, address: str) -> int:
+def get_next_nonce(db: Session, redis: StrictRedis, address: str, ex: int = 30) -> int:
     cache_key = f"{address}_nonce"
     if redis.exists(cache_key):
-        return redis.incr(cache_key)
-    nonce = db.query(max_(Transaction.nonce)).filter_by(signer=address).scalar()
-    if nonce is None:
-        nonce = 0
-    redis.set(cache_key, nonce, nx=True)
-    return redis.incr(cache_key)
+        nonce = redis.incr(cache_key)
+        redis.expire(cache_key, ex)
+    else:
+        nonce = db.query(max_(Transaction.nonce)).filter_by(signer=address).scalar()
+        if nonce is None:
+            nonce = -1
+        nonce += 1
+        redis.set(cache_key, nonce, nx=True, ex=ex)
+    return nonce
 
 
 def put_transaction(db: Session, tx: Transaction) -> Transaction:

@@ -1,5 +1,6 @@
+import time
 import uuid
-from typing import List, Optional, cast
+from typing import List, cast
 
 import pytest
 from redis import StrictRedis
@@ -10,21 +11,29 @@ from src.models import Transaction
 
 
 @pytest.mark.parametrize(
-    "nonce_list, expected",
+    "nonce_list, cached_nonce, expected",
     [
-        ([], 1),
-        ([1, 2], 3),
-        ([2, 3], 4),
-        ([1, 4], 5),
-        ([5], 6),
+        ([], None, 0),
+        ([], 1, 2),
+        ([1, 2], None, 3),
+        ([2, 3], None, 4),
+        ([1, 4], None, 5),
+        ([5], None, 6),
+        ([4], 6, 7),
     ],
 )
-def test_get_next_nonce_from_db(
-    db: Session, redisdb: StrictRedis, nonce_list: List[int], expected: int
+def test_get_next_nonce(
+    db: Session,
+    redisdb: StrictRedis,
+    nonce_list: List[int],
+    cached_nonce: int,
+    expected: int,
 ):
     address = "0xCFCd6565287314FF70e4C4CF309dB701C43eA5bD"
     cache_key = f"{address}_nonce"
-    assert not redisdb.exists(cache_key)
+    if cached_nonce is not None:
+        redisdb.set(cache_key, cached_nonce)
+    assert redisdb.exists(cache_key) == int(cached_nonce is not None)
     for nonce in nonce_list:
         tx = Transaction(
             nonce=nonce,
@@ -41,28 +50,7 @@ def test_get_next_nonce_from_db(
     # check cache
     assert int(value) == expected
     # check increase cache value
-    assert get_next_nonce(db, redisdb, address) == expected + 1
-
-
-@pytest.mark.parametrize(
-    "nonce, expected",
-    [
-        (None, 1),
-        (2, 3),
-    ],
-)
-def get_next_nonce_from_cache(
-    db: Session, redisdb: StrictRedis, nonce: Optional[int], expected: int
-):
-    address = "0xCFCd6565287314FF70e4C4CF309dB701C43eA5bD"
-    cache_key = f"{address}_nonce"
-    if nonce is not None:
-        redisdb.set(cache_key, nonce)
-    assert redisdb.exists(cache_key) == nonce is not None
-    # get nonce from cache
-    assert get_next_nonce(db, redisdb, address) == expected
-    value: bytes = cast(bytes, redisdb.get(cache_key))
-    # check cache
-    assert int(value) == expected
-    # check increase cache value
-    assert get_next_nonce(db, redisdb, address) == expected + 1
+    assert get_next_nonce(db, redisdb, address, 1) == expected + 1
+    # check cache expire
+    time.sleep(1)
+    assert not redisdb.exists(cache_key)
