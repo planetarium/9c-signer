@@ -89,14 +89,14 @@ def stage(self, tx_id: str, headless_url: str) -> str:
     except TransportQueryError:
         tx.tx_result = TransactionStatus.INVALID
     else:
-        tx.tx_result = TransactionStatus.STAGED
+        tx.tx_result = TransactionStatus.STAGING
     put_transaction(self.db, tx)
     return tx_id
 
 
 @celery.task(bind=True)
 def sync_tx_result(self) -> GroupResult:
-    transactions = get_transactions(self.db, TransactionStatus.STAGED)
+    transactions = get_transactions(self.db, TransactionStatus.STAGING)
     return group(
         tx_result.s(transaction.tx_id, str(config.headless_url))
         for transaction in transactions

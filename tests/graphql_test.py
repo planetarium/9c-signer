@@ -21,6 +21,10 @@ def test_check_transaction_result():
     assert result.txStatus in (
         TransactionStatus.SUCCESS,
         TransactionStatus.INVALID,
-        TransactionStatus.FAILED,
+        TransactionStatus.FAILURE,
+        TransactionStatus.STAGING,
     )
-    assert result.exceptionName is None
+    if result.txStatus == TransactionStatus.FAILURE:
+        assert result.exceptionName is not None
+    else:
+        assert result.exceptionName is None

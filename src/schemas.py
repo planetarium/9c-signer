@@ -8,8 +8,8 @@ from pydantic import BaseModel, field_serializer, field_validator
 
 class TransactionStatus(str, Enum):
     CREATED = "CREATED"
-    STAGED = "STAGED"
-    FAILED = "FAILED"
+    STAGING = "STAGING"
+    FAILURE = "FAILURE"
     SUCCESS = "SUCCESS"
     INVALID = "INVALID"
 
@@ -48,4 +48,8 @@ class TransactionResult(BaseModel):
             return TransactionStatus.SUCCESS
         if v.upper() == "INVALID":
             return TransactionStatus.INVALID
-        return TransactionStatus.FAILED
+        if v.upper() == "STAGING":
+            return TransactionStatus.STAGING
+        if v.upper() == "CREATED":
+            return TransactionStatus.CREATED
+        return TransactionStatus.FAILURE

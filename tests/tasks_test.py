@@ -17,7 +17,7 @@ def test_sync_tx_result(
     schema = Transaction(
         tx_id=tx_id,
         nonce=10000,
-        tx_result=TransactionStatus.STAGED,
+        tx_result=TransactionStatus.STAGING,
         signer=fx_kms_signer.address,
         payload="payload",
         created_at=datetime.datetime.utcnow(),
@@ -33,4 +33,4 @@ def test_sync_tx_result(
     result = resp.json()
     assert result["task_id"] == str(task_id)
     assert result["nonce"] == 10000
-    assert result["tx_result"] != TransactionStatus.STAGED
+    assert result["tx_result"] != TransactionStatus.STAGING
