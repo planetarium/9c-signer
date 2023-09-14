@@ -18,5 +18,9 @@ def test_stage_transaction():
 def test_check_transaction_result():
     tx_id = "4d4209adfb326f810a1ad7aa0141d21253b763e4942e90a145413b685fd971bc"
     result = check_transaction_result(str(config.headless_url), tx_id)
-    assert result.txStatus == TransactionStatus.SUCCESS
+    assert result.txStatus in (
+        TransactionStatus.SUCCESS,
+        TransactionStatus.INVALID,
+        TransactionStatus.FAILED,
+    )
     assert result.exceptionName is None

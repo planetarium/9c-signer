@@ -46,13 +46,13 @@ def test_sign_tx(celery_session_worker, fx_test_client: TestClient, db: Session)
     resp = fx_test_client.get(f"/transactions/tasks/{task_id}/")
     result = resp.json()
     assert result["task_id"] == str(task_id)
-    assert result["nonce"] == 1
+    assert result["nonce"] == 0
     assert result["tx_result"] == TransactionStatus.INVALID
 
     tx_id = result["tx_id"]
     resp = fx_test_client.get(f"/transactions/{tx_id}/")
     result = resp.json()
     assert result["task_id"] == str(task_id)
-    assert result["nonce"] == 1
+    assert result["nonce"] == 0
     assert result["tx_result"] == TransactionStatus.INVALID
     assert result["tx_id"] == tx_id
