@@ -16,6 +16,7 @@ from src.main import app
 from src.models import Transaction
 from src.schemas import Transaction as TransactionSchema
 from src.schemas import TransactionStatus
+from src.tasks import SessionTask
 
 redis_proc = factories.redis_proc(port=6379)
 DB_OPTS = sa.engine.url.make_url(str(config.database_url)).translate_connect_args()
@@ -80,3 +81,8 @@ def fx_kms_signer() -> Signer:
 @pytest.fixture(scope="session")
 def celery_enable_logging(redis_proc):
     return True
+
+
+@pytest.fixture(scope="session")
+def celery_parameters():
+    return {"task_cls": SessionTask}
