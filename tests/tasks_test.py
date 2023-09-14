@@ -29,7 +29,7 @@ def test_sync_tx_result(
     inner_task: AsyncResult = group_task.children[0]  # type: ignore
     inner_task.get()
     task_id = schema.task_id
-    resp = fx_test_client.get(f"/transactions/{task_id}/")
+    resp = fx_test_client.get(f"/transactions/tasks/{task_id}/")
     result = resp.json()
     assert result["task_id"] == str(task_id)
     assert result["nonce"] == 10000
